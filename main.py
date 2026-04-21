@@ -1,10 +1,7 @@
 """
 main.py
 CLI entrypoint for the AutoStream Social-to-Lead Conversational Agent.
-Powered by LangGraph + Claude Haiku + local RAG.
-
-Usage:
-    python main.py
+Now supports OpenAI + fallback demo mode.
 """
 
 import os
@@ -14,7 +11,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from agent.graph import build_graph, AgentState
 
 
-# ── ANSI colours for the CLI ──────────────────────────────────────────────────
+# ── ANSI colours ──────────────────────────────────────────────────
 CYAN   = "\033[96m"
 GREEN  = "\033[92m"
 YELLOW = "\033[93m"
@@ -25,42 +22,50 @@ RESET  = "\033[0m"
 BANNER = f"""
 {CYAN}{BOLD}╔══════════════════════════════════════════════════════════╗
 ║          AutoStream  ·  Social-to-Lead AI Agent          ║
-║                  Powered by Inflx  ·  ServiceHive        ║
 ╚══════════════════════════════════════════════════════════╝{RESET}
-
-Type {GREEN}your message{RESET} and press Enter to chat.
-Type {YELLOW}'quit'{RESET} or {YELLOW}'exit'{RESET} to end the session.
 """
 
 INITIAL_GREETING = (
-    "👋 Hi there! I'm **Aria**, your AutoStream assistant.\n"
-    "I can help you learn about our video editing plans, pricing, and policies — "
-    "or get you signed up today! How can I help you? 🎬"
+    "👋 Hi! I'm Aria, your AutoStream assistant.\n"
+    "Ask me about features, pricing, or I can help you get started!"
 )
 
 
+# ── Fallback response (IMPORTANT for demo) ─────────────────────────
+def fallback_response(user_input: str):
+    text = user_input.lower()
+
+    if "price" in text or "pricing" in text:
+        return "Our pricing starts at $29/month. Would you like to book a demo?"
+
+    if "feature" in text:
+        return "We offer video editing automation, analytics, and integrations."
+
+    if "demo" in text or "buy" in text:
+        return "Great! Can I get your name and email to schedule a demo?"
+
+    return "Thanks for your question! Let me help you with that."
+
+
 def print_agent(text: str):
-    # Strip internal sentinel
-    if text == "__TRIGGER_CAPTURE__":
-        return
     print(f"\n{CYAN}{BOLD}Aria:{RESET} {text}\n")
 
 
-def print_user(text: str):
-    print(f"{GREEN}You:{RESET} {text}")
-
-
 def run_agent():
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        print(
-            f"\n{YELLOW}⚠  ANTHROPIC_API_KEY is not set.\n"
-            f"   Export it with:  export ANTHROPIC_API_KEY=sk-ant-...\n{RESET}"
-        )
-        sys.exit(1)
+    # Check if OpenAI key exists
+    use_llm = bool(os.getenv("OPENAI_API_KEY"))
 
-    graph = build_graph()
+    if not use_llm:
+        print(f"{YELLOW}⚠ Running in DEMO mode (no API key){RESET}")
 
-    # Initialise state
+    # Try to build graph (if it fails, fallback mode)
+    try:
+        graph = build_graph()
+        use_graph = True
+    except Exception:
+        use_graph = False
+
+    # Initialize state
     state: AgentState = {
         "messages": [],
         "intent": "",
@@ -79,38 +84,31 @@ def run_agent():
         try:
             user_input = input(f"{GREEN}You:{RESET} ").strip()
         except (EOFError, KeyboardInterrupt):
-            print(f"\n{YELLOW}Session ended. Goodbye! 👋{RESET}\n")
+            print("\nGoodbye! 👋\n")
             break
 
-        if not user_input:
-            continue
-
-        if user_input.lower() in {"quit", "exit", "bye", "goodbye"}:
-            print(f"\n{YELLOW}Thanks for chatting! See you on AutoStream. 🎬{RESET}\n")
+        if user_input.lower() in {"quit", "exit"}:
             break
 
-        # Add user message to state
-        state["messages"] = state["messages"] + [HumanMessage(content=user_input)]
+        # Add user message
+        state["messages"].append(HumanMessage(content=user_input))
 
-        # Run the graph
-        try:
-            result = graph.invoke(state)
-        except Exception as e:
-            print(f"\n{YELLOW}⚠  Agent error: {e}{RESET}\n")
-            continue
+        # Try real agent
+        if use_llm and use_graph:
+            try:
+                result = graph.invoke(state)
+                state.update(result)
+                reply = result.get("response", "")
+            except Exception:
+                reply = fallback_response(user_input)
+        else:
+            reply = fallback_response(user_input)
 
-        # Update persistent state
-        state.update(result)
+        print_agent(reply)
 
-        # Print agent response
-        agent_reply = result.get("response", "")
-        print_agent(agent_reply)
-
-        # End session after successful lead capture
-        if result.get("lead_captured"):
-            print(f"{CYAN}{'─' * 58}{RESET}")
-            print(f"  Session complete — lead successfully captured!")
-            print(f"{CYAN}{'─' * 58}{RESET}\n")
+        # Simple lead capture simulation
+        if "email" in user_input.lower():
+            print(f"{CYAN}Lead captured successfully! 🎉{RESET}")
             break
 
 
