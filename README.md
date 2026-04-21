@@ -161,7 +161,8 @@ State Management	LangGraph state
 Tool Execution	Lead capture function
 Code Structure	Modular and clean
 Demo Stability	Fallback mode enabled
-🚀 Future Improvements
+
+### 🚀 Future Improvements
 Streamlit UI (chat interface)
 CRM integration (HubSpot, Salesforce)
 WhatsApp / API deployment
