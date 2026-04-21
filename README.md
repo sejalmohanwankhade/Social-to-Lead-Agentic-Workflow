@@ -1,234 +1,158 @@
 # AutoStream · Social-to-Lead AI Agent
 ### Machine Learning Intern Assignment — ServiceHive / Inflx
 
-> A production-grade conversational AI agent that converts social media intent into qualified business leads using LangGraph, Claude Haiku, and local RAG.
+> A production-grade conversational AI agent that converts user intent into qualified business leads using LangGraph, RAG, and tool execution.
+
+---
+
+## ✨ Key Features
+
+- 💬 Conversational AI agent with memory
+- 📚 Retrieval-Augmented Generation (RAG)
+- 🎯 Intent detection (general vs high-intent)
+- 🧰 Tool execution (lead capture)
+- ⚡ Demo-safe fallback mode (no API required)
+- 🔄 Stateful workflow using LangGraph
 
 ---
 
 ## 📁 Project Structure
-
-```
 autostream-agent/
-├── main.py                          # CLI entrypoint
+├── main.py # CLI entrypoint
 ├── requirements.txt
 ├── README.md
 ├── knowledge_base/
-│   └── autostream_kb.json           # Local knowledge base (pricing, features, policies)
+│ └── autostream_kb.json # Local knowledge base
 ├── agent/
-│   └── graph.py                     # LangGraph state machine (nodes + edges)
+│ └── graph.py # LangGraph workflow
 ├── tools/
-│   └── lead_capture.py              # mock_lead_capture() tool
+│ └── lead_capture.py # Lead capture tool
 └── utils/
-    ├── rag_pipeline.py              # Local RAG retrieval
-    └── intent_classifier.py         # Keyword-based intent classifier
-```
+├── rag_pipeline.py # RAG retrieval logic
+└── intent_classifier.py # Intent classification
+
 
 ---
 
 ## 🚀 How to Run Locally
 
-### Prerequisites
+### ✅ Prerequisites
 - Python 3.9 or higher
-- An [Anthropic API key](https://console.anthropic.com/) (Claude Haiku)
+- (Optional) OpenAI API key for real LLM responses
 
-### 1. Clone and install
+---
+
+### 1. Clone and setup
 
 ```bash
-git clone https://github.com/your-username/autostream-agent.git
+git clone https://github.com/sejalmohanwankhade/Social-to-Lead-Agentic-Workflow.git
 cd autostream-agent
 
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
-```
 
-### 2. Set your API key
+2. (Optional) Set API key
+export OPENAI_API_KEY=your-key
 
-```bash
-export ANTHROPIC_API_KEY=sk-ant-your-key-here
 # Windows PowerShell:
-# $env:ANTHROPIC_API_KEY="sk-ant-your-key-here"
-```
+# $env:OPENAI_API_KEY="your-key"
 
-Or create a `.env` file:
+⚡ Demo Mode (No API Key Required)
 
-```
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
+If no API key is provided, the agent runs in demo mode using fallback logic.
 
-### 3. Run the agent
+This ensures:
 
-```bash
+App never crashes
+Intent detection works
+Lead capture flow works
+
+⚠ This mode is used for demonstration purposes.
+
+3. Run the agent
 python main.py
-```
+🎥 Demo Instructions
 
-### Example session
+Try these queries:
 
-```
-You: Hi there!
-Aria: Hey! I'm Aria, your AutoStream assistant. How can I help?
+What features do you offer?
+I want pricing
+I want to sign up
 
-You: What's the difference between the Basic and Pro plans?
-Aria: Great question! Basic is $29/month — 10 videos, 720p. Pro is $79/month —
-      unlimited videos, 4K, AI captions, and 24/7 support.
+Then provide:
 
-You: That sounds great, I want to sign up for the Pro plan for my YouTube channel.
-Aria: Amazing! Let's get you set up. What's your full name?
+Name
+Email
+Platform
 
-You: Alex Johnson
-Aria: Thanks Alex! What's your email address?
+👉 The agent will capture the lead successfully.
 
-You: alex@example.com
-Aria: Perfect! And which creator platform do you mainly use?
+💬 Example Interaction
+You: What features do you offer?
+Aria: We offer video editing automation, analytics, and integrations.
 
-You: YouTube
-Aria: 🎉 You're all set, Alex! Lead captured. Our team will reach out shortly!
+You: I want pricing
+Aria: Our pricing starts at $29/month. Would you like to book a demo?
 
-[Lead captured: Alex Johnson | alex@example.com | YouTube]
-```
+You: Yes, I want to sign up
+Aria: Great! Can I get your name and email?
 
----
+You: Sejal
+You: sejal@email.com
 
-## 🏗 Architecture Explanation (~220 words)
+Aria: 🎉 Lead captured successfully!
+🏗 Architecture Overview
+User Input
+     ↓
+Intent Detection
+     ↓
+RAG Retrieval (Knowledge Base)
+     ↓
+LLM / Fallback Logic
+     ↓
+Tool Execution (Lead Capture)
+🧠 Design Decisions
+Why LangGraph?
 
-### Why LangGraph?
+LangGraph enables deterministic state-driven workflows, making it ideal for structured flows like lead capture.
+Unlike autonomous agents, this system ensures predictable transitions.
 
-LangGraph was chosen over AutoGen because this workflow requires **deterministic, inspectable state transitions** rather than autonomous multi-agent negotiation. The lead capture flow has a strict sequential structure (greet → retrieve → qualify → collect name → collect email → collect platform → capture), and LangGraph's explicit `StateGraph` makes this flow transparent and testable. Each node is a pure function; the router decides the next step based on typed state — making debugging and auditing straightforward.
+State Management
 
-### How State Is Managed
+The agent uses a shared AgentState to track:
 
-`AgentState` is a `TypedDict` that persists across all turns in a single session. It tracks:
-- **`messages`** — full `HumanMessage`/`AIMessage` history (LangChain objects), giving the LLM complete conversational memory across 5–6+ turns
-- **`intent`** — classified intent per turn
-- **`lead_name / lead_email / lead_platform`** — progressively filled during lead collection
-- **`collecting_lead / lead_captured`** — boolean flags controlling graph routing
+Conversation history
+User intent
+Lead details (name, email, platform)
+Workflow state (collecting vs completed)
+RAG System
+Uses local JSON knowledge base
+Retrieves relevant content based on query
+Improves response accuracy
+Tool Execution
 
-The graph routes through `classify_intent` on every turn. If `collecting_lead=True`, the router bypasses intent classification and goes directly to `collect_lead_info`, ensuring the three fields are gathered sequentially without re-triggering intent logic.
+Lead capture is implemented as a tool:
 
-The LLM (Claude Haiku) receives the full `messages` list in every call, giving it native conversational context without an external memory store.
+capture_lead(name, email, platform)
+Triggered only when:
 
----
+User shows high intent
+Required details are collected
+📊 Evaluation Checklist
+Criteria	Implementation
+Intent Detection	Keyword-based classifier
+RAG Retrieval	Local knowledge base
+State Management	LangGraph state
+Tool Execution	Lead capture function
+Code Structure	Modular and clean
+Demo Stability	Fallback mode enabled
+🚀 Future Improvements
+Streamlit UI (chat interface)
+CRM integration (HubSpot, Salesforce)
+WhatsApp / API deployment
+Advanced LLM routing
+📄 License
 
-## 📱 WhatsApp Deployment via Webhooks
-
-To deploy this agent on WhatsApp, you would use the **WhatsApp Business API (Cloud API)** via Meta and expose your agent over HTTPS webhooks.
-
-### Architecture
-
-```
-WhatsApp User
-     │
-     ▼
-Meta WhatsApp Cloud API
-     │  (POST webhook)
-     ▼
-Your Server  ──►  verify_token check  ──►  extract message text
-     │
-     ▼
-AutoStream LangGraph Agent  ──►  generate response
-     │
-     ▼
-WhatsApp Cloud API  ──►  POST /messages  ──►  User receives reply
-```
-
-### Implementation Steps
-
-**1. Register a Meta Business App**
-- Go to [developers.facebook.com](https://developers.facebook.com) and create a Business App
-- Add the WhatsApp product and obtain a `Phone Number ID` and `Access Token`
-
-**2. Set up a webhook server (FastAPI example)**
-
-```python
-from fastapi import FastAPI, Request
-from agent.graph import build_graph, AgentState
-from langchain_core.messages import HumanMessage
-
-app = FastAPI()
-graph = build_graph()
-
-# In-memory session store (use Redis in production)
-sessions: dict[str, AgentState] = {}
-
-VERIFY_TOKEN = "your-webhook-verify-token"
-
-@app.get("/webhook")
-async def verify_webhook(request: Request):
-    params = dict(request.query_params)
-    if params.get("hub.verify_token") == VERIFY_TOKEN:
-        return int(params["hub.challenge"])
-    return {"error": "Invalid token"}, 403
-
-@app.post("/webhook")
-async def receive_message(request: Request):
-    body = await request.json()
-    
-    # Extract user message and phone number (session key)
-    entry = body["entry"][0]["changes"][0]["value"]
-    message = entry["messages"][0]
-    phone = message["from"]
-    text = message["text"]["body"]
-    
-    # Get or create session state
-    if phone not in sessions:
-        sessions[phone] = {
-            "messages": [], "intent": "",
-            "lead_name": None, "lead_email": None,
-            "lead_platform": None,
-            "collecting_lead": False, "lead_captured": False, "response": ""
-        }
-    
-    state = sessions[phone]
-    state["messages"] = state["messages"] + [HumanMessage(content=text)]
-    
-    result = graph.invoke(state)
-    sessions[phone].update(result)
-    
-    # Send reply back to WhatsApp
-    await send_whatsapp_message(phone, result["response"])
-    return {"status": "ok"}
-```
-
-**3. Send replies via Meta API**
-
-```python
-import httpx
-
-async def send_whatsapp_message(to: str, text: str):
-    url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
-    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "type": "text",
-        "text": {"body": text}
-    }
-    async with httpx.AsyncClient() as client:
-        await client.post(url, json=payload, headers=headers)
-```
-
-**4. Production considerations**
-- Replace in-memory `sessions` dict with **Redis** for scalability and persistence across server restarts
-- Use **ngrok** or deploy to a cloud provider (Railway, Render, AWS Lambda) to expose the webhook over HTTPS
-- Add **rate limiting** and **signature verification** (`X-Hub-Signature-256` header) for security
-- Store leads in a real CRM (HubSpot, Salesforce) instead of the mock function
-
----
-
-## 📊 Evaluation Checklist
-
-| Criteria | Implementation |
-|---|---|
-| Intent Detection | Keyword heuristics + LLM fallback in `utils/intent_classifier.py` |
-| RAG Retrieval | TF-IDF style keyword scoring in `utils/rag_pipeline.py` |
-| State Management | `AgentState` TypedDict across all turns in `agent/graph.py` |
-| Tool Calling | `mock_lead_capture()` called only after all 3 fields collected |
-| Code Clarity | Modular structure, docstrings, type hints throughout |
-| Deployability | Webhook architecture documented above |
-
----
-
-## 📄 License
-
-MIT — Built for ServiceHive / Inflx Machine Learning Intern Assignment.
+MIT — Built for ServiceHive / Inflx ML Intern Assignment
