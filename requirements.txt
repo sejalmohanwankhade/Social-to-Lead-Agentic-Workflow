@@ -1,0 +1,16 @@
+# AutoStream Social-to-Lead Agent — Dependencies
+# Python 3.9+
+
+# LangChain core
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-anthropic>=0.3.0
+
+# LangGraph — agentic state machine
+langgraph>=0.2.0
+
+# Anthropic SDK (used by langchain-anthropic)
+anthropic>=0.40.0
+
+# Env variable management
+python-dotenv>=1.0.0
