@@ -1,36 +1,29 @@
 # AutoStream · Social-to-Lead AI Agent
 ### Machine Learning Intern Assignment — ServiceHive / Inflx
 
-> A production-grade conversational AI agent that converts user intent into qualified business leads using LangGraph, RAG, and tool execution.
-
----
-
-## ✨ Key Features
-
-- 💬 Conversational AI agent with memory
-- 📚 Retrieval-Augmented Generation (RAG)
-- 🎯 Intent detection (general vs high-intent)
-- 🧰 Tool execution (lead capture)
-- ⚡ Demo-safe fallback mode (no API required)
-- 🔄 Stateful workflow using LangGraph
+> A production-grade conversational AI agent that converts social media intent into qualified business leads using LangGraph, Claude Haiku, and local RAG.
 
 ---
 
 ## 📁 Project Structure
+
+```
 autostream-agent/
-├── main.py # CLI entrypoint
+├── main.py                          # CLI entrypoint
 ├── requirements.txt
 ├── README.md
 ├── knowledge_base/
-│ └── autostream_kb.json # Local knowledge base
+│   └── autostream_kb.json           # Local knowledge base (pricing, features, policies)
 ├── agent/
-│ └── graph.py # LangGraph workflow
+│   └── graph.py                     # LangGraph state machine (nodes + edges)
 ├── tools/
-│ └── lead_capture.py # Lead capture tool
+│   └── lead_capture.py              # mock_lead_capture() tool
 └── utils/
-├── rag_pipeline.py # RAG retrieval logic
-└── intent_classifier.py # Intent classification
+    ├── rag_pipeline.py              # Local RAG retrieval
+    └── intent_classifier.py         # Keyword-based intent classifier
+```
 
+---
 
 ---
 
@@ -41,8 +34,7 @@ autostream-agent/
 - (Optional) OpenAI API key for real LLM responses
 
 ---
-
-### 1. Clone and setup
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/sejalmohanwankhade/Social-to-Lead-Agentic-Workflow.git
@@ -52,14 +44,18 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
+```
 
-2. (Optional) Set API key
-export OPENAI_API_KEY=your-key
-
+### 2. Set your API key
+```bash
+export ANTHROPIC_API_KEY=sk-ant-your-key-here
 # Windows PowerShell:
 # $env:OPENAI_API_KEY="your-key"
+```
 
-⚡ Demo Mode (No API Key Required)
+
+### 3. Demo Mode (No API Key Required)
+```
 
 If no API key is provided, the agent runs in demo mode using fallback logic.
 
@@ -70,10 +66,16 @@ Intent detection works
 Lead capture flow works
 
 ⚠ This mode is used for demonstration purposes.
+```
 
-3. Run the agent
+### 4. Run the agent
+
+```bash
 python main.py
-🎥 Demo Instructions
+```
+### 🎥 Demo Instructions
+
+```
 
 Try these queries:
 
@@ -86,8 +88,12 @@ Then provide:
 Name
 Email
 Platform
+```
 
-👉 The agent will capture the lead successfully.
+### 👉 The agent will capture the lead successfully.
+
+```
+
 
 💬 Example Interaction
 You: What features do you offer?
@@ -103,7 +109,10 @@ You: Sejal
 You: sejal@email.com
 
 Aria: 🎉 Lead captured successfully!
-🏗 Architecture Overview
+```
+### 🏗 Architecture Overview
+```
+
 User Input
      ↓
 Intent Detection
@@ -113,7 +122,10 @@ RAG Retrieval (Knowledge Base)
 LLM / Fallback Logic
      ↓
 Tool Execution (Lead Capture)
-🧠 Design Decisions
+
+
+```
+### 🧠 Design Decisions
 Why LangGraph?
 
 LangGraph enables deterministic state-driven workflows, making it ideal for structured flows like lead capture.
@@ -140,7 +152,8 @@ Triggered only when:
 
 User shows high intent
 Required details are collected
-📊 Evaluation Checklist
+
+### 📊 Evaluation Checklist
 Criteria	Implementation
 Intent Detection	Keyword-based classifier
 RAG Retrieval	Local knowledge base
@@ -153,6 +166,7 @@ Streamlit UI (chat interface)
 CRM integration (HubSpot, Salesforce)
 WhatsApp / API deployment
 Advanced LLM routing
-📄 License
+
+### 📄 License
 
 MIT — Built for ServiceHive / Inflx ML Intern Assignment
